@@ -1,0 +1,70 @@
+<project name="Text2Onto" default="compile" basedir=".">
+	<description>
+		Buildfile for Text2Onto
+	</description>
+	
+	<property name="plugin" location="plugin"/>
+	<property name="src" location="src"/>
+	<property name="build-bin" location="build/bin"/>
+	<property name="build-jar" location="build/jar"/>
+	<property name="build-doc" location="build/doc"/>
+	<property name="misc" location="3rdparty"/>
+	<property name="kaon" location="3rdparty/kaon"/>
+	<property name="gate" location="3rdparty/gate"/>
+	<property name="google" location="3rdparty/google"/>
+	<property name="kaon2" location="3rdparty/kaon2"/>
+    
+	<path id="classpath">
+		<pathelement location="${misc}"/>
+		<fileset dir="${misc}">
+			<include name="**/*.jar"/>
+		</fileset>
+		<pathelement location="${kaon}"/>
+		<fileset dir="${kaon}">
+			<include name="**/*.jar"/>
+		</fileset>
+		<pathelement location="${gate}"/>
+		<fileset dir="${gate}">
+			<include name="**/*.jar"/>
+		</fileset>
+		<pathelement location="${google}"/>
+		<fileset dir="${google}">
+			<include name="**/*.jar"/>
+		</fileset>
+		<fileset dir="${kaon2}">
+			<include name="**/*.jar"/>
+		</fileset> 
+	</path>
+    
+	<target name="init">
+		<tstamp/>
+	</target>
+	
+	<target name="compile" depends="init" description="compile">
+		<mkdir dir="${build-bin}"/>
+		<javac source="1.5" srcdir="${src}" destdir="${build-bin}">
+			<classpath refid="classpath"/>
+		</javac> 
+	</target>
+
+	<target name="jar" depends="compile" description="generate jar files" >
+		<mkdir dir="${build-jar}"/>
+		<jar jarfile="${build-jar}/text2onto.jar">
+			<fileset dir="${build-bin}"/>
+		</jar> 
+	</target>
+    
+	<target name="doc">
+		<mkdir dir="${build-doc}"/>
+		<javadoc source="1.5" packagenames="org.ontoware.text2onto.*" sourcepath="${src}" destdir="${build-doc}">
+			<classpath refid="classpath"/>
+		</javadoc> 
+	</target>
+    
+	<target name="clean" description="clean up" >
+		<delete dir="${build-bin}"/>
+		<delete dir="${build-jar}"/>
+		<delete dir="${build-doc}"/>
+	</target>
+</project>
+    

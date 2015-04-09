@@ -1,0 +1,1891 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--Converted with LaTeX2HTML 2K.1beta (1.47)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta name="generator" content="HTML Tidy, see www.w3.org">
+<title>SemTag and Seeker: Bootstrapping the Semantic Web via
+Automated Semantic Annotation</title>
+<meta name="description" content="SemTag and Seeker: Bootstrapping the Semantic Web via Automated Semantic Annotation">
+<meta name="keywords" content="main">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="Generator" content="LaTeX2HTML v2K.1beta">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="stylesheet" href="SemTag_files/www2003.css" type="text/css">
+</head>
+<body style=" TEXT-INDENT: 1em; font-size:10pt; font-family:Times; color:black; margin-top:4pt; margin-bottom:2pt; ">
+<div class="meta">
+<h1 class="title">SemTag and Seeker: Bootstrapping the Semantic
+Web via Automated Semantic Annotation</h1>
+
+<div class="authors">
+<div class="author">
+<h1 class="author"><strong>Stephen&nbsp;Dill, Nadav&nbsp;Eiron, David&nbsp;Gibson,
+Daniel&nbsp;Gruhl, R.&nbsp;Guha, Anant&nbsp;Jhingran, Tapas&nbsp;Kanungo,
+ Sridhar&nbsp;Rajagopalan, Andrew&nbsp;Tomkins, John&nbsp;A.&nbsp;Tomlin, and
+ Jason&nbsp;Y.&nbsp;Zien<br>
+</strong></h1>
+      <h2 class="affiliation"> <strong> <br>
+        IBM Almaden Research Center<br>
+        650 Harry Road<br>
+        San Jose, CA 95120</strong> </h2>
+      <p class="affiliation"> <font face="Times New Roman, Times, serif" size="-2">Copyright 
+        is held by the author/owner(s).<br>
+        <i>WWW2003</i>, May 20-24, 2003, Budapest, Hungary.<br>
+        ACM 1-58113-680-3/03/0005.</font><br>
+      </p>
+</div>
+</div>
+  
+<p></p>
+<div class="abstract">
+<h2 class="abstract">Abstract</h2>
+
+<p class="abstract">This paper describes Seeker, a platform for large-scale text
+analytics, and SemTag, an application written on the platform to
+perform automated semantic tagging of large corpora. We apply
+SemTag to a collection of approximately 264 million web pages, and
+generate approximately 434 million automatically disambiguated
+semantic tags, published to the web as a label bureau providing
+metadata regarding the 434 million annotations. To our knowledge,
+this is the largest scale semantic tagging effort to date.</p>
+
+<p class="abstract">We describe the Seeker platform, discuss the architecture of the
+SemTag application, describe a new disambiguation algorithm
+specialized to support ontological disambiguation of large-scale
+data, evaluate the algorithm, and present our final results with
+information about acquiring and making use of the semantic tags. We
+argue that automated large scale semantic tagging of ambiguous
+content can bootstrap and accelerate the creation of the semantic
+web.</p>
+</div>
+
+<p></p>
+
+<div> 
+<h2>Categories and Subject Descriptors</h2>
+<p>
+D.2.11 <b>[Software Engineering]</b>: Software Architectures;
+H.2.4 <b>[Database Management]</b>: Systems -- <i>Textual databases</i>;
+H.3.3 <b>[Information Storage and Retrieval]</b>: Information Search and Retrieval;
+H.3.5 <b>[Information Storage and Retrieval]</b>: Online Information
+Services -- <i>Web-based services</i>;
+I.2.7 <b>[Artificial Intelligence]</b>: Natural
+Language Processing;
+</p>
+</div>
+
+<div> 
+<h2>General Terms</h2>
+<p> Algorithms, Design, Experimentation</p>
+</div>
+
+<div class="keywords">
+<h2 class="keywords">Keywords</h2>
+<p class="keywords">
+Large text datasets, information retrieval, data mining, text analytics, automated semantic tagging </p>
+</div>
+
+
+<p></p>
+
+<p></p>
+
+<h2><a id="SECTION00010000000000000000" name="SECTION00010000000000000000"></a> <a id="sec:intro" name="sec:intro"></a><br>
+1 Introduction</h2>
+
+The WWW has had a tremendous impact on society and business in just
+a few years by making information instantly and ubiquitously
+available. During this transition from physical to electronic means
+for information transport, the content and encoding of information
+has remained natural language. Today, this is perhaps the most
+significant obstacle to streamlining business processes via the
+web. In order that processes may execute without human
+intervention, documents <i>must</i> become more machine
+understandable. 
+
+<p>The Semantic Web&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sw">5</a>] is a vision
+of a future web of machine-understandable documents and data.<a id="tex2html1" name="tex2html1" href="#foot187"><sup>1</sup></a> On
+a machine understandable web, it will be possible for programs to
+<em>easily</em> determine what documents are about. For instance,
+the people, places, events, and other entities that a document
+mentions will be canonically annotated within it. As a consequence,
+it is hoped that a new breed of smarter applications will become
+available.</p>
+
+<p><b>Where will the data come from?</b> For the semantic web
+vision to come to fruition, two classes of meta-data must become
+extensive and pervasive. The first is ontological support in the
+form of web-available services which will maintain metadata about
+entities and provide them when needed. The second is large-scale
+availability of annotations within documents encoding canonical
+references to mentioned entities.</p>
+
+<p>Ontological support for the semantic web is an active area of
+both research and business development, but not the focus of this
+paper. Instead, we use the TAP ontology&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#TAP">30</a>] in our experiments.</p>
+
+<p>In partial support of the second class of data, document
+annotations, it is expected that enterprises will make business
+data available in Semantic Web formats (RDF, XML, or OWL). It is
+also expected that productivity tools will make it possible for
+individuals to author semantically annotated documents.</p>
+
+<p>Nonetheless, for all this to happen, we need applications that
+can effectively leverage semantically tagged data. In turn, these
+applications cannot be useful unless there is enough semantically
+tagged data on the web in the first place. Unfortunately, today's
+reality is that few documents contain such annotations <i>a
+priori</i>, and we are in a state of circular dependency.
+Organizations that might create powerful tools based on semantic
+annotations are leery of sinking significant developmental effort
+while the number of available tags remains small; and content
+creators are similarly unwilling to create annotations while no
+tools exist to make use of them. The size of the web makes this
+bootstrapping problem is both formidable and acute.</p>
+
+<p></p>
+
+<h3><a id="SECTION00011000000000000000" name="SECTION00011000000000000000">1.1 Our contributions</a></h3>
+
+SemTag is an application that performs automated semantic tagging
+of large corpora. We apply SemTag to a collection of approximately
+264 million web pages, and generate approximately 434 million
+automatically disambiguated semantic tags, published to the web as
+a label bureau&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#PICS">37</a>] providing
+metadata regarding the 434 million annotations. To our knowledge,
+this is the largest scale semantic tagging effort to date, and
+demonstrates the viability of bootstrapping a web scale semantic
+network. The key challenge is resolving ambiguities in a natural
+language corpus. To this end, we introduce a new disambiguation
+algorithm called TBD, for Taxonomy-Based Disambiguation. 
+
+<p>Maintaining and updating a corpus the size of the Web requires
+infrastructure of a scale which most tagging applications cannot be
+expected to support. We also need a platform which different
+tagging applications can share. Seeker is a platform designed for
+this purpose. It provides highly scalable core functionality to
+support the needs of SemTag and other automated semantic annotation
+algorithms.</p>
+
+<p></p>
+
+<h3><a id="SECTION00012000000000000000" name="SECTION00012000000000000000">1.2 Paper structure</a></h3>
+
+The remainder of the paper will consist of a review of the current
+state of the art (Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:related">2</a>), an outline of the SemTag
+application approach (Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:semtag">3</a>), the results of running the
+SemTag application on the web corpus (Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:results">4</a>), an outline of what the
+underlying Seeker system requires (Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:requirements">5</a>), a brief discussion of the
+design and implementation of that system (Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:design">6</a>) followed by general conclusions
+(Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:conc">7</a>). 
+
+<p></p>
+
+<h2><a id="SECTION00020000000000000000" name="SECTION00020000000000000000"></a> <a id="sec:related" name="sec:related"></a><br>
+2 Related Literature</h2>
+
+<p>In the last couple of years, as part of the Semantic Web
+activity, a number of different systems have been built. These
+systems help perform one of two tasks: (1) create ontologies, and
+(2) annotate web pages with ontology derived semantic tags. By and
+large, both classes of systems have been focused on manual and
+semi-automatic tooling to improve the productivity of a human
+ontologist or annotator rather than on fully automated methods.
+Such systems have the advantage that humans can provide extremely
+fine-grained semantic tags. However, as reported in [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#erdmann00from">11</a>], even with the machine
+assistance, this is an arduous, time consuming and error-prone
+task.</p>
+
+<p>A number of annotation tools for producing semantic markups
+exist. Protege-2000 [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#noy-creating">28</a>] is a
+tool which supports the creation of ontologies for the semantic
+web. OntoAnnotate [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#staab01annotation">34</a>], a
+framework for the semantic web, includes tools for both manual and
+semi-automatic annotation of pages. Annotea [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#kahan01annotea">17</a>] provides RDF-based markup
+but it does not support information extraction nor is it linked to
+an ontology server. SHOE&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#SHOE">14</a>] was
+one the earliest systems for adding semantic annotations to web
+pages. SHOE Knowledge Annotator allows users to mark up pages in
+SHOE guided by ontologies available locally or via a URL. These
+marked up pages can be reasoned about by SHOE-aware tools such as
+SHOE Search. Such tools are described in [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#and-mnm">36</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#leonard-large">19</a>]. AeroDAML [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#lockheed-aerodaml">23</a>] is an interesting tools
+which takes an ontology and automatically produces a semantically
+marked up page which can then be checked by a human.</p>
+
+<p>More recently, there have been efforts to automate some of these
+tasks using machine learning as a palliative measure. The principal
+tool is ``wrapping'' (see, for instance, [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#kushmerick97wrapper">18</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#lerman-automatic">20</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#cohen-structured">10</a>]). These systems try to
+extract detailed structural data out of the pages and require
+significant training before they can be productive. Furthermore,
+such systems don't work against common shared ontologies, which is
+the focus of the semantic web.</p>
+
+<p>SemTag is different from both these classes of systems in that
+it tags very large numbers of pages, with terms from a standard
+ontology, in an automated fashion. Furthermore, since SemTag
+operates as a centralized application with access to the entire
+database and associated metadata, it has many advantages over a
+local, per-page tagger. For example, it can make use of corpus-wide
+statistics to increase the quality of semantic tags. It can easily
+be re-run as new annotation algorithms and new semantic
+repositories become available. And it can perform operations that
+are only possible in the presence of many tags, such as automated
+alias discovery. More recent work, e.g. [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#SAD">22</a>], which combines natural language
+understanding with learning to automatically generate annotations
+for specific domains is similar in spirit to SemTag. The current
+focus of SemTag is detecting the occurrence of particular entities
+in web pages. One of the critical steps in this process is that of
+resolving ambiguities. This is an area with a rich body of work
+([<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#wilks97sense">40</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#schuetze98automatic">32</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#levow97corpusbased">21</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#mihalcea99word">26</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#pustejovsky97semantic">29</a>]) from the language
+understanding community.</p>
+
+<p>In this paper, we present results of SemTag using the TAP
+knowledge base&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#riloff96empirical">31</a>].
+TAP is a shallow knowledge base that contains a broad range of
+lexical and taxonomic information about popular objects like:
+Music, movies, authors, sports, autos, health, etc. We used the TAP
+knowledge base in its standard ontology. Building a web scale
+ontology will require much larger knowledge bases. Future work
+involves using techniques such as those described in [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#riloff96empirical">31</a>] to bootstrap from TAP to
+build much larger and richer ontologies.</p>
+
+<p>With SemTag's current shallow level of understanding, RDFS [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#RDFS">7</a>] provides an adequate language for
+representing the annotations it generates. We expect that in the
+future, as SemTag's level of understanding improves, we will have
+to use more advanced languages [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#mcguinness01description">24</a>] and move towards
+OWL [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#OWL">38</a>].</p>
+
+<p>SemTag is built on the Seeker platform for large scale text
+analytics. The explosive growth of the web, and the difficulty of
+performing complex data analysis tasks on unstructured data, has
+led to several different lines of research and development. Of
+these, the most prominent are the web search engines, (see for
+instance&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#Google">12</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#AltaVista">3</a>]) which have been primarily
+designed to address the problem of ``information overload.'' A
+number of interesting techniques have been suggested in this area;
+however, since this is not the direct focus of this paper, we omit
+these here. The interested reader is referred to the survey by
+Broder and Henzinger&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#monikasurvey">8</a>].</p>
+
+<p>Several authors&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#AQM97">1</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#Telegraph">15</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#AMM97">4</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#SS00">33</a>,<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#MMM98">25</a>]
+describe relational approaches to web analysis. In this model, data
+on the web is seen as a collection of relations (for instance, the
+``points to'' relation) each of which are realized by a function
+and accessed through a relational engine. This allows a user to
+describe his or her query in declarative form (SQL, typically) and
+leverages the machinery of SQL to execute the query. In all of
+these approaches, the data is fetched dynamically from the network
+on a lazy basis, and therefore, runtime performance is heavily
+penalized.</p>
+
+<p>The Stanford WebBase project&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#WebBase">16</a>], while targeting a system that
+allows easy sequential and random access to a copy of the web, does
+not provide the same prototyping and development environment Seeker
+does. Specifically, it lacks the functionality that allows
+developers to annotate web pages, and easily reuse the results of
+other analysis components.</p>
+
+<p>Compaq SRC web-in-a-box (WIB) project&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#webbox">39</a>] is another system designed to allow
+researchers to develop text analysis tools that have access to a
+copy of the web. While WIB allows analysis components to annotate
+web pages, it does not provide storage for any derived data (such
+as people or organizations) other than web pages. Furthermore, its
+architecture does not allow users to compose complex data mining
+modules from simpler data mining modules, or re-use data.</p>
+
+<p>The Internet Archive&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#internetarchive">35</a>], has a different objective.
+The data is crawled and hosted, as is the case in web search
+engines. In addition, a streaming data interface is provided which
+allows applications to access the data for analysis. However, a
+sophisticated querying system is not provided, nor is a method to
+perform large scale data analysis.</p>
+
+<p></p>
+
+<h2><a id="SECTION00030000000000000000" name="SECTION00030000000000000000"></a> <a id="sec:semtag" name="sec:semtag"></a><br>
+3 SemTag: A Semantic Tagger</h2>
+
+Consider a world in which all documents on the web contained
+semantic annotations based on TAP. So the sentence: ``The Chicago
+Bulls announced yesterday that Michael Jordan will...'' would
+appear as: 
+
+<pre>The &lt;resource ref="http://tap.stanford.edu/
+BasketballTeam_Bulls"&gt;Chicago Bulls&lt;/resource&gt;
+announced yesterday that &lt;resource ref=
+"http://tap.stanford.edu/AthleteJordan,_Michael"&gt;
+Michael Jordan&lt;/resource&gt; will...''
+</pre>
+
+Thus, the annotation: 
+
+<pre>&lt;resource ref="http://tap.stanford.edu/
+AthleteJordan,_Michael"&gt;Michael Jordan&lt;/resource&gt;
+</pre>
+
+says that the string ``Michael Jordan'' refers to the resource
+whose URI is ``http://tap.stanford.edu/AthleteJordan,_Michael.'' It
+is expected that querying this URI will result in encoded
+information which provides greater detail about this resource. 
+
+<p>The bulk of documents on the web today do not contain
+annotations of this form. Consequently, application developers
+cannot rely on such annotations. On the other side, website
+creators are unlikely to add annotations in the absence of
+applications that use these annotations. A natural approach to
+break this cycle and provide an early set of widespread semantic
+tags is automated generation. This is the goal of SemTag. SemTag
+seeks to provide an automated processes for adding these to the
+existing HTML corpus on the Web. In this paper, we look at what
+needs to be done to address this problem at the scale of the
+web.</p>
+
+<p>We adapt the concept of a label bureau from PICS so that an
+application of the Semantic Web can obtain semantic annotations for
+a page from a third party even when the author of the page has
+annotated the page. Semantic annotations can be retrieved
+separately from the documents to which they refer. To request
+annotations in this way, an application contacts a <i>Semantic
+Label Bureau</i>. A semantic label bureau is an HTTP server that
+understands a particular query syntax. It can provide annotations
+for documents that reside on other servers.</p>
+
+<p>Because SemTag does not have write access to the original
+document, the resulting annotations are written into a
+web-available database. The contents of this data base are made
+available via a semantic label bureau from which it is possible to
+extract semantic tags using a variety of mechanisms. For instance,
+one application may request the semantic tags for a given document,
+while another may request all semantic tags regarding a particular
+object (say, the basketball player Michael Jordan).</p>
+
+<p></p>
+
+<h3><a id="SECTION00031000000000000000" name="SECTION00031000000000000000"></a> <a id="sec:semtag-flow" name="sec:semtag-flow"></a><br>
+3.1 SemTag flow</h3>
+
+The overall SemTag architecture is shown in Figure&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#fig:adiag">1</a>. 
+
+<div align="CENTER"><a id="fig:adiag" name="fig:adiag"></a><a id="332" name="332"></a> 
+
+<table>
+<caption align="BOTTOM"><strong>Figure 1:</strong> The SemTag
+architecture.</caption>
+
+<tbody><tr>
+<td>
+<div align="CENTER"><!-- MATH
+ $\includegraphics[width=3.0in,height=1.23in]{adiag}$
+ -->
+<img src="SemTag_files/p831-dill-1.png" alt="\includegraphics[width=3.0in,height=1.23in]{adiag}" height="140" align="BOTTOM" border="0" width="344"></div>
+</td>
+</tr>
+</tbody></table>
+</div>
+
+SemTag works in three phases: 
+
+<dl>
+<dt><strong>Spotting pass</strong></dt>
+
+<dd>Documents are retrieved from the Seeker store, tokenized, and
+then processed to find all instances of the approximately 72K
+labels that appear in the TAP taxonomy. Each resulting label is
+saved with ten words to either side as a ``window'' of context
+around the particular candidate object. This first stage takes
+place at approximately 10,000 documents per second on the Seeker
+infrastructure, naively distributed over 64 machines.</dd>
+
+<dt><strong>Learning pass</strong></dt>
+
+<dd>A representative sample of the data is then scanned to
+determine the corpus-wide distribution of terms at each internal
+node of the taxonomy, as described in Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:sridhar-greek-section">3.3</a>. This processing
+takes place at approximately 8,000 windows per second on a single
+machine.</dd>
+
+<dt><strong>Tagging pass</strong></dt>
+
+<dd>Finally, the windows must be scanned once more to disambiguate
+each reference. When a string is finally determined to refer to an
+actual TAP object, a record is entered into a database of final
+results containing the URL, the reference, and any other associated
+metadata. This pass can be performed sequentially at approximately
+1,200-3,000 windows/second on a single machine. For details on the
+algorithm used in doing this see Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:sridhar-greek-section">3.3</a>.</dd>
+</dl>
+
+<p></p>
+
+<p></p>
+
+<p></p>
+
+<h3><a id="SECTION00032000000000000000" name="SECTION00032000000000000000"></a> <a id="sec:tba" name="sec:tba"></a><br>
+3.2 SemTag Ambiguity resolution</h3>
+
+In this section, we describe the Taxonomy Based Disambiguation
+(TBD) algorithm. TBD performs disambiguation of references to
+entities within a large-scale ontology. 
+
+<p><b>Ambiguity within SemTag:</b> Automated tagging algorithms,
+unlike human tagged data, can have significant levels of
+mis-classification. Thus, sources of ambiguity within the ontology
+is a significant concern. There are two fundamental categories of
+ambiguities:</p>
+
+<ol>
+<li>Some labels appear at multiple locations in the TAP ontology.
+For instance, the string ``Michael Jordan'' may refer to a
+statistician, a basketball player, or many others. This occurs
+infrequently in the current taxonomy, but we expect it to occur
+with increasing frequency as the taxonomy grows.</li>
+
+<li>Some entities have labels that occur in contexts that have no
+representative in the taxonomy. For instance, the term Natalia
+sometimes refers to the musician, but ordinarily denotes simply a
+person's first name, which has no entry in the taxonomy. This
+occurs frequently in our current data set, and will probably
+continue to occur frequently even as the taxonomy grows.</li>
+</ol>
+
+<p><b>Evolution of ontologies:</b> Ontologies such as TAP will
+continue to evolve. Our expectation is that tailored algorithms
+with human-tuned parameters will be applied to a small number of
+critical sections, with automated approaches still dealing with the
+bulk of the ontology. In keeping with this philosophy TBD makes use
+of two classes of training information:</p>
+
+<dl>
+<dt><strong>Automatic metadata</strong></dt>
+
+<dd>A large amount of automatically-generated metadata allows the
+algorithm to estimate whether windows around candidate references
+are likely to have been generated within a particular subtree of
+the taxonomy.</dd>
+
+<dt><strong>Manual metadata</strong></dt>
+
+<dd>A small amount of manually-generated metadata (approximately
+700 yes/no judgments regarding whether a label in a given context
+refers to some objects) gives the algorithm information regarding
+nodes of the taxonomy that contain highly ambiguous or unambiguous
+labels. These judgments are used to determine which portions of the
+taxonomy can most fruitfully benefit from particular disambiguation
+schemes.</dd>
+</dl>
+
+<p></p>
+
+<h3><a id="SECTION00033000000000000000" name="SECTION00033000000000000000"></a> <a id="sec:sridhar-greek-section" name="sec:sridhar-greek-section"></a><br>
+3.3 Overview of TBD</h3>
+
+We begin with a few formal definitions. Terms are italicized when
+first defined. 
+
+<p>An <em>ontology</em> <img src="SemTag_files/p831-dill-2.png" alt="$ O$" height="17" align="BOTTOM" border="0" width="17"> is defined by four
+elements. A set of <em>classes</em>, <img src="SemTag_files/p831-dill-3.png" alt="$ C$" height="17" align="BOTTOM" border="0" width="17">, a
+<em>subClass</em> relation <!-- MATH
+ $S \subseteq C \times C$
+ -->
+<img src="SemTag_files/p831-dill-4.png" alt="$ S \subseteq C \times C$" height="30" align="MIDDLE" border="0" width="76">, a set of
+<em>instances</em> <img src="SemTag_files/p831-dill-5.png" alt="$ I$" height="17" align="BOTTOM" border="0" width="13">, and a <em>type</em>
+relation <!-- MATH
+ $T \subseteq I \times C$
+ -->
+<img src="SemTag_files/p831-dill-6.png" alt="$ T \subseteq I \times C$" height="30" align="MIDDLE" border="0" width="73">. We use the
+notation <img src="SemTag_files/p831-dill-7.png" alt="$ t(i,c)$" height="31" align="MIDDLE" border="0" width="41"> to denote the boolean function 
+<!-- MATH
+ $(i,c) \in T$
+ -->
+<img src="SemTag_files/p831-dill-8.png" alt="$ (i,c) \in T$" height="31" align="MIDDLE" border="0" width="64"> and <!-- MATH
+ $s(c_1, c_2)$
+ -->
+<img src="SemTag_files/p831-dill-9.png" alt="$ s(c_1, c_2)$" height="31" align="MIDDLE" border="0" width="57"> likewise. We assume that
+instances are closed over super-classing. Namely, for any <!-- MATH
+ $i, c_1,
+c_2$
+ -->
+<img src="SemTag_files/p831-dill-10.png" alt="$ i, c_1, c_2$" height="29" align="MIDDLE" border="0" width="50">, <!-- MATH
+ $t(i,c_1) \& s(c_1, c_2) \Rightarrow t(i, c_2)$
+ -->
+<img src="SemTag_files/p831-dill-11.png" alt="$ t(i,c_1) \&amp; s(c_1, c_2) \Rightarrow t(i, c_2)$" height="31" align="MIDDLE" border="0" width="174">.</p>
+
+<p>An <em>taxonomy</em> <img src="SemTag_files/p831-dill-12.png" alt="$ T$" height="17" align="BOTTOM" border="0" width="16"> is defined by three
+elements: a set of <em>nodes</em>, <img src="SemTag_files/p831-dill-13.png" alt="$ V$" height="17" align="BOTTOM" border="0" width="18">; a
+<em>root</em> <img src="SemTag_files/p831-dill-14.png" alt="$ r \in V$" height="30" align="MIDDLE" border="0" width="43">; and finally, a <i>parent</i>
+function, <!-- MATH
+ $p:V \mapsto V$
+ -->
+<img src="SemTag_files/p831-dill-15.png" alt="$ p:V \mapsto V$" height="30" align="MIDDLE" border="0" width="72">. We require that (1) the
+root is its own parent, <img src="SemTag_files/p831-dill-16.png" alt="$ p(r) = r$" height="31" align="MIDDLE" border="0" width="58">, (2) for all other
+nodes, this is not so, i.e. if <!-- MATH
+ $v \neq r, p(v)
+\neq v$
+ -->
+<img src="SemTag_files/p831-dill-17.png" alt="$ v \neq r, p(v) \neq v$" height="31" align="MIDDLE" border="0" width="100">, and (3) the root
+<img src="SemTag_files/p831-dill-18.png" alt="$ r$" height="17" align="BOTTOM" border="0" width="13"> is in the ancestry of every node,
+i.e. for every <img src="SemTag_files/p831-dill-19.png" alt="$ v \in V$" height="30" align="MIDDLE" border="0" width="43">, <!-- MATH
+ $r \in \{v, p(v), p(p(v)), p(p(p(v))),
+\ldots \}$
+ -->
+<img src="SemTag_files/p831-dill-20.png" alt="$ r \in \{v, p(v), p(p(v)), p(p(p(v))), \ldots \}$" height="31" align="MIDDLE" border="0" width="233">.
+Henceforth, we will use <img src="SemTag_files/p831-dill-21.png" alt="$ \pi(v)$" height="31" align="MIDDLE" border="0" width="34"> to denote the
+ancestry chain of <img src="SemTag_files/p831-dill-22.png" alt="$ v$" height="17" align="BOTTOM" border="0" width="14">. The <i>internal nodes</i>
+of the taxonomy are given by <!-- MATH
+ $\{u: u = p(v) \mbox{for some $v$}\}$
+ -->
+<img src="SemTag_files/p831-dill-23.png" alt="$ \{u: u = p(v)$" height="31" align="MIDDLE" border="0" width="88">&nbsp; &nbsp;for some <img src="SemTag_files/p831-dill-22.png" alt="$ v$" height="17" align="BOTTOM" border="0" width="14"><img src="SemTag_files/p831-dill-24.png" alt="$ \}$" height="31" align="MIDDLE" border="0" width="13">. A taxonomy can be derived given an
+ontology, which is a more general concept.</p>
+
+<p>Each node <img src="SemTag_files/p831-dill-19.png" alt="$ v \in V$" height="30" align="MIDDLE" border="0" width="43"> is associated with a set of
+<i>labels</i>, <img src="SemTag_files/p831-dill-25.png" alt="$ L(v)$" height="31" align="MIDDLE" border="0" width="35">. For instance, taxonomy
+nodes about <i>cats</i>, <i>football</i>, <i>computers</i> and
+<em>cars</em> all contain the label ``jaguar.'' A <i>spot</i> <img src="SemTag_files/p831-dill-26.png" alt="$ (\ell,c)$" height="31" align="MIDDLE" border="0" width="36"> is a label <img src="SemTag_files/p831-dill-27.png" alt="$ \ell$" height="17" align="BOTTOM" border="0" width="12"> in a
+context <img src="SemTag_files/p831-dill-28.png" alt="$ c\in C$" height="30" align="MIDDLE" border="0" width="42">, where <img src="SemTag_files/p831-dill-3.png" alt="$ C$" height="17" align="BOTTOM" border="0" width="17">
+is the space of all possible contexts. The context consists of 10
+preceding and 10 succeeding words of text surrounding the label,
+culled from the document in which the label occurred. We use the
+spot to tag the label with its semantic tag, which is always an
+node of <img src="SemTag_files/p831-dill-12.png" alt="$ T$" height="17" align="BOTTOM" border="0" width="16">.</p>
+
+<p>With each internal node <img src="SemTag_files/p831-dill-29.png" alt="$ u\in T$" height="30" align="MIDDLE" border="0" width="43"> we
+associate a <i>similarity function</i> <!-- MATH
+ $f_u: C\mapsto [0,1]$
+ -->
+<img src="SemTag_files/p831-dill-30.png" alt="$ f_u: C\mapsto [0,1]$" height="31" align="MIDDLE" border="0" width="97"> mapping from a
+context to a similarity. Good similarity functions have the
+property that the higher the similarity, the more likely that the
+spot contains a reference to an entity that belongs in the subtree
+rooted at <img src="SemTag_files/p831-dill-31.png" alt="$ u$" height="17" align="BOTTOM" border="0" width="14">. The similarity functions encapsulate
+the automatically-generated metadata regarding nodes of the
+taxonomy.</p>
+
+<p>We can use the similarity function to define an algorithm Sim to
+guess whether a particular context <img src="SemTag_files/p831-dill-32.png" alt="$ c$" height="17" align="BOTTOM" border="0" width="12"> is
+appropriate for a particular node, as follows. We will then use Sim
+to define TBD. The definition of Sim is given in Figure&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#fig:sim-alg">2</a>.</p>
+
+<p></p>
+
+<div align="CENTER"><a id="fig:sim-alg" name="fig:sim-alg"></a><a id="409" name="409"></a> 
+
+<table>
+<caption align="BOTTOM"><strong>Figure 2:</strong> Algorithm
+Sim</caption>
+
+<tbody><tr>
+<td><img src="SemTag_files/p831-dill-33.png" alt="\framebox{\centerline{ \begin{minipage}{0.45\textwidth} \hspace*{2em}\textrm{Sim... ...hspace*{4em} if $b=r$\ return 0 \ \hspace*{4em} else return 1 \end{minipage}}}" height="94" align="MIDDLE" border="0" width="568">
+</td>
+</tr>
+</tbody></table>
+</div>
+
+<p></p>
+
+<div align="CENTER"><a id="fig:tbd-alg" name="fig:tbd-alg"></a><a id="428" name="428"></a> 
+
+<table>
+<caption align="BOTTOM"><strong>Figure 3:</strong> Algorithm
+TBD</caption>
+
+<tbody><tr>
+<td><img src="SemTag_files/p831-dill-34.png" alt="\framebox{\centerline{ \begin{minipage}{0.45\textwidth} \hspace*{2em}{TBD}$(c,u)... ...*{6em} else \ \hspace*{8em} return 1 - \textrm{Sim}$(c,u)$\ \end{minipage}}}" height="250" align="MIDDLE" border="0" width="568">
+</td>
+</tr>
+</tbody></table>
+</div>
+
+<p>For our problem instance, we must focus on disambiguating
+references in the taxonomy versus references outside the taxonomy.
+If the focus is instead on disambiguating references that may
+belong to multiple nodes of the taxonomy, then the test <img src="SemTag_files/p831-dill-35.png" alt="$ b=r$" height="17" align="BOTTOM" border="0" width="39"> should be replaced with <!-- MATH
+ $b\neq p(v)$
+ -->
+<img src="SemTag_files/p831-dill-36.png" alt="$ b\neq p(v)$" height="31" align="MIDDLE" border="0" width="58">.</p>
+
+<p>Finally, with a small number of popular internal nodes <img src="SemTag_files/p831-dill-29.png" alt="$ u\in T$" height="30" align="MIDDLE" border="0" width="43"> we associate a <i>measurement</i> <!-- MATH
+ $(m^a_u,m^s_u) \in [0,1]^2$
+ -->
+<img src="SemTag_files/p831-dill-37.png" alt="$ (m^a_u,m^s_u) \in [0,1]^2$" height="35" align="MIDDLE" border="0" width="120">. <img src="SemTag_files/p831-dill-38.png" alt="$ m^a_u$" height="31" align="MIDDLE" border="0" width="27"> gives the probability as measured by human
+judgments that spots for the subtree rooted at <img src="SemTag_files/p831-dill-31.png" alt="$ u$" height="17" align="BOTTOM" border="0" width="14">
+are on topic. <img src="SemTag_files/p831-dill-39.png" alt="$ m^s_u$" height="31" align="MIDDLE" border="0" width="27"> gives the probability that Sim
+correctly judges whether spots for the subtree rooted at <img src="SemTag_files/p831-dill-31.png" alt="$ u$" height="17" align="BOTTOM" border="0" width="14"> are on topic. Thus, the set of measurements
+encapsulates the manually-generated metadata in the system, and can
+be seen as a training set for the algorithm.</p>
+
+<p>Algorithm TBD is defined in Figure&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#fig:tbd-alg">3</a>. The algorithm returns 1 or 0 to
+indicate whether a particular context <img src="SemTag_files/p831-dill-32.png" alt="$ c$" height="17" align="BOTTOM" border="0" width="12"> is on topic
+for a node <img src="SemTag_files/p831-dill-40.png" alt="$ v\in T$" height="30" align="MIDDLE" border="0" width="42">.</p>
+
+<p>Thus, the small numbers of measurements allow TBD to determine
+whether it is operating in a region of the taxonomy that is highly
+unambiguous, or a region that is highly ambiguous. If the former,
+it will choose to adopt references with certainly; if the latter,
+it will apply a probabilistic algorithm.</p>
+
+<p>In Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:results">4</a> we evaluate
+various different approaches to the similarity function <img src="SemTag_files/p831-dill-41.png" alt="$ f_u$" height="30" align="MIDDLE" border="0" width="21">.</p>
+
+<p></p>
+
+<p></p>
+
+<h2><a id="SECTION00040000000000000000" name="SECTION00040000000000000000"></a> <a id="sec:results" name="sec:results"></a><br>
+4 Results</h2>
+
+<p>We implemented the SemTag algorithm described above, and applied
+it to a set of 264 million pages producing 270G of dump data
+corresponding to 550 million labels in context. Of these labels,
+approximately 79% are judged to be on-topic, resulting in a final
+set of about 434 million spots, with accuracy around 82%. Details
+are given below.</p>
+
+<p></p>
+
+<h3><a id="SECTION00041000000000000000" name="SECTION00041000000000000000">4.1 Methodology</a></h3>
+
+<p>As described above, we first dumped context surrounding each
+spot. We then processed those contexts as follows:</p>
+
+<p><b>Lexicon generation:</b> We built a collection of 1.4 million
+unique words occurring in a random subset of windows containing
+approximately 90 million total words. Following standard practice,
+we created a final lexicon of 200,000 words from the 1.4 million
+unique words by taking the most frequent 200,100, and removed the
+most frequent 100. All further computations were performed in the
+200,000-dimensional vector space defined by this set of terms.</p>
+
+<p><b>Similarity functions:</b> We estimated the distribution of
+terms corresponding to each of the 192 most common internal nodes
+of the taxonomy in order to derive the similarity function <img src="SemTag_files/p831-dill-41.png" alt="$ f_u$" height="30" align="MIDDLE" border="0" width="21"> described in Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:sridhar-greek-section">3.3</a>. We experimented
+with several standard similarity measures; the results are given in
+Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:results-sim">4.2</a>.</p>
+
+<p><b>Measurement values:</b> Based on 750 relevance judgments from
+human judges, we determined the measurement values associated with
+the 24 largest taxonomy nodes, as described in Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:sridhar-greek-section">3.3</a>.</p>
+
+<p><b>Full TBD processing:</b> We applied the TBD algorithm to the
+entire dataset of 550 million spots using the family of similarity
+functions deemed to be most effective in Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:results-sim">4.2</a>, and using the human- and
+machine-generated metadata described above.</p>
+
+<p><b>Evaluation:</b> Finally, we collected an additional 378 human
+judgments against a previously unevaluated set of contexts in order
+to evaluate the effectiveness of TBD.</p>
+
+<p>We now describe briefly our process for collecting human
+judgments, our measure of accuracy, and some baseline experiments
+regarding the difficulty that human judges have in coming to a
+single unambiguous conclusion about a particular spot.</p>
+
+<p></p>
+
+<h4><a id="SECTION00041100000000000000" name="SECTION00041100000000000000">4.1.1 Evaluation and human
+judgments</a></h4>
+
+<p>As is well known from research in Knowledge Acquisition [<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#KA">13</a>] and more recently from studies of manual
+semantic tagging of documents, there are many cases where different
+people choose different terms from an ontology with which to tag a
+phrase or a document. Therefore, we need to be careful when
+evaluating the results of SemTag.</p>
+
+<p>We created a web-based tool that displays to an evaluator a spot
+consisting of a label in a context. The tool asks the evaluator to
+determine whether the spot is on topic for a particular node of
+TAP. This information is used to generate the measurements of
+Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:sridhar-greek-section">3.3</a>.</p>
+
+<p>Because there are several locations in TAP that may be
+appropriate for a particular entry (we evaluate this phenomenon
+below), the tool also checks to see if TBD suggested that the spot
+belongs elsewhere--if so, the tool also asks whether the
+algorithm's output is a valid answer.</p>
+
+<p>We gathered two sets of evaluations. For the first set of
+evaluations, a set of 11 volunteers were asked to examine 1100
+selections made by SemTag. The first 2/3 of these evaluations were
+used as human-generated metadata for TBD. The remaining 1/3 of the
+evaluations were used to score the performance of the
+algorithm.</p>
+
+<p>Finally, a set of three volunteers were each asked to evaluate
+the same set of 200 labels in context, using the same tool
+described above. Of these 200, all three evaluators agreed on 137;
+i.e., only 68.5% were unambiguous to the humans. Furthermore, the
+tool was modified in this experiment to allow the users to indicate
+that a particular piece of context (typically ten words to either
+side of the label) was insufficient to understand the denotation of
+the label. The evaluators each selected this option in only 2.5% of
+the instances. Therefore, we conclude that while a 10-word window
+to either side of a label is typically sufficient to understand the
+sense of the label, human judgment is highly ambiguous regarding
+the placement of the label into the taxonomy.</p>
+
+<p>The remainder of this section proceeds as follows.
+Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:results-sim">4.2</a> describes
+our evaluation of different similarity functions. Sections <a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:results-human-data">4.3</a> and&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:results-machine-data">4.4</a> then give results
+of a sensitivity analysis to the availability of machine- and
+human-generated metadata to develop the similarity functions and
+measurement values respectively of Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:sridhar-greek-section">3.3</a>.</p>
+
+<p></p>
+
+<h3><a id="SECTION00042000000000000000" name="SECTION00042000000000000000"></a> <a id="sec:results-sim" name="sec:results-sim"></a><br>
+4.2 Similarity between a Spot and a Collection</h3>
+
+<p>Consider some fixed node of the taxonomy, and a new spot <img src="SemTag_files/p831-dill-26.png" alt="$ (\ell,c)$" height="31" align="MIDDLE" border="0" width="36"> that may belong in the subtree rooted at that
+node. As presented in Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:sridhar-greek-section">3.3</a>, TBD must
+determine whether the context <img src="SemTag_files/p831-dill-32.png" alt="$ c$" height="17" align="BOTTOM" border="0" width="12">
+corresponding to the new spot looks similar to the contexts that
+typically occur around spots from that node. We evaluate four
+standard candidates for similarity functions.</p>
+
+<p>First, we must cover the preliminaries. We generate a
+200K-dimensional vector (over the terms of the lexicon)
+corresponding to each internal node <img src="SemTag_files/p831-dill-29.png" alt="$ u\in T$" height="30" align="MIDDLE" border="0" width="43">, or
+more precisely, to the contexts that occur around spots for the
+<img src="SemTag_files/p831-dill-31.png" alt="$ u$" height="17" align="BOTTOM" border="0" width="14">. In scheme ``Prob'', each entry of
+the vector is simply the probability of the term occurring in the
+window. In scheme ``TF-IDF'', each entry of the vector is the
+frequency of the term occurring at that node, divided by the corpus
+frequency of the term. In all cases, the vectors are normalized to
+length 1.</p>
+
+<p>Next, we consider two variants of algorithms to compute the
+similarity of a spot given a vector. Algorithm ``IR'' computes the
+standard ``cosine measure'' vector product of the sparse vector
+corresponding to the current spot and the (probably dense) vector
+corresponding to the node. Algorithm ``Bayes'' computes the
+probability that the terms in the context would have been generated
+by a source generating terms independently according to the
+distribution given by the vector corresponding to <img src="SemTag_files/p831-dill-31.png" alt="$ u$" height="17" align="BOTTOM" border="0" width="14">.</p>
+
+<p><br>
+</p>
+
+<div align="CENTER"><a id="674" name="674"></a> 
+
+<table summary="Table 1: Accuracy">
+<caption><strong>Table 1:</strong> Accuracy (probability of
+correctness) for each algorithm under each vector weighting scheme
+over test set.</caption>
+
+<tbody><tr>
+<td>
+<div align="CENTER">
+<table border="1" cellpadding="3">
+<tbody><tr>
+<td align="CENTER">Algorithm</td>
+<td align="CENTER">IR</td>
+<td align="CENTER">Bayes</td>
+</tr>
+
+<tr>
+<td align="CENTER">Prob</td>
+<td align="CENTER">78.04%</td>
+<td align="CENTER">76.98%</td>
+</tr>
+
+<tr>
+<td align="CENTER">TF-IDF</td>
+<td align="CENTER">82.01%</td>
+<td align="CENTER">78.31%</td>
+</tr>
+</tbody></table>
+</div>
+
+<a id="tab:sim-table" name="tab:sim-table"></a></td>
+</tr>
+</tbody></table>
+</div>
+
+<br>
+ 
+
+<p>The results are shown in Table&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#tab:sim-table">1</a>. As the table shows, the most
+effective scheme is the cosine measure with tf-idf weightings.
+Furthermore, the tf-idf weighting scheme dominates the unweighted
+scheme, and so we adopt it henceforth for our other comparisons,
+and simply compare the IR and Bayes algorithms.</p>
+
+<p>Overall, the accuracy of classification under the favored scheme
+is roughly 82%. As we show later, even comparing human judgments to
+other human judgments shows a systematic error rate of roughly this
+amount, leading us to believe that significant improvements will be
+quite difficult to achieve.</p>
+
+<p></p>
+
+<h3><a id="SECTION00043000000000000000" name="SECTION00043000000000000000"></a> <a id="sec:results-human-data" name="sec:results-human-data"></a><br>
+4.3 Sensitivity to availability of human-derived metadata</h3>
+
+<p>Next, we consider the sensitivity of TBD to the amount of
+human-derived metadata present in the system. When TBD makes use of
+all human-derived metadata, there are 24 internal nodes of <img src="SemTag_files/p831-dill-12.png" alt="$ T$" height="17" align="BOTTOM" border="0" width="16"> with measurements. Figure&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#fig:ncov">4</a> shows for each such node what
+fraction of the total labels are covered by that node. The first
+node with measurement data is the root <img src="SemTag_files/p831-dill-18.png" alt="$ r$" height="17" align="BOTTOM" border="0" width="13">, whose
+subtree covers all measurements; thus, the leftmost point of the
+graph has <img src="SemTag_files/p831-dill-42.png" alt="$ y$" height="29" align="MIDDLE" border="0" width="14">-value 100. The next node with
+measurement data corresponds to cities in the United States, and
+covers around 13% of the total spots. The actual values, and node
+labels, are given in Table&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#tab:nspots-table">2</a>.</p>
+
+<p>Figure&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#fig:algac">5</a> shows the
+performance of TBD when only <img src="SemTag_files/p831-dill-43.png" alt="$ i$" height="17" align="BOTTOM" border="0" width="11"> of the 24
+total measurements are available to the system. As the figure
+shows, TBD is effective even with extremely minimal metadata.</p>
+
+<p></p>
+
+<div align="CENTER"><a id="fig:ncov" name="fig:ncov"></a><a id="687" name="687"></a> 
+
+<table>
+<caption align="BOTTOM"><strong>Figure 4:</strong> Percentage of
+spots influenced by hand classified data</caption>
+
+<tbody><tr>
+<td>
+<div align="CENTER"><!-- MATH
+ $\includegraphics[width=3.2in]{node_coverage}$
+ -->
+<img src="SemTag_files/p831-dill-51.png" alt="node_coverage" height="504" align="BOTTOM" border="0" width="720">
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+
+<p></p>
+
+<div align="CENTER"><a id="fig:algac" name="fig:algac"></a><a id="694" name="694"></a> 
+
+<table>
+<caption align="BOTTOM"><strong>Figure 5:</strong> Accuracy of the
+two algorithms employed in SemTag</caption>
+
+<tbody><tr>
+<td>
+<div align="CENTER"><!-- MATH
+ $\includegraphics[width=3.2in]{alg_accuracy}$
+ -->
+<img src="SemTag_files/p831-dill-52.png" alt="alg_accuracy" height="504" align="BOTTOM" border="0" width="720">
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+
+<p><br>
+</p>
+
+<div align="CENTER"><a id="701" name="701"></a> 
+
+<table summary="Table 2: Nodes">
+<caption><strong>Table 2:</strong> Nodes of TAP with percentage of
+spots occurring in corresponding subtree.</caption>
+
+<tbody><tr>
+<td>
+<div align="CENTER">
+<table border="1" cellpadding="3">
+<tbody><tr>
+<td align="LEFT">Node</td>
+<td align="LEFT">Fraction of spots</td>
+</tr>
+
+<tr>
+<td align="LEFT">Class</td>
+<td align="LEFT">100.00%</td>
+</tr>
+
+<tr>
+<td align="LEFT">UnitedStatesCity</td>
+<td align="LEFT">12.97%</td>
+</tr>
+
+<tr>
+<td align="LEFT">ProfessionalType</td>
+<td align="LEFT">10.21%</td>
+</tr>
+
+<tr>
+<td align="LEFT">Country</td>
+<td align="LEFT">9.66%</td>
+</tr>
+
+<tr>
+<td align="LEFT">Musician</td>
+<td align="LEFT">8.14%</td>
+</tr>
+
+<tr>
+<td align="LEFT">City</td>
+<td align="LEFT">7.86%</td>
+</tr>
+
+<tr>
+<td align="LEFT">ProductType</td>
+<td align="LEFT">7.31%</td>
+</tr>
+
+<tr>
+<td align="LEFT">Fortune1000Company</td>
+<td align="LEFT">4.41%</td>
+</tr>
+
+<tr>
+<td align="LEFT">TechnologyBrand</td>
+<td align="LEFT">3.45%</td>
+</tr>
+
+<tr>
+<td align="LEFT">PersonalComputerGame</td>
+<td align="LEFT">3.45%</td>
+</tr>
+
+<tr>
+<td align="LEFT">University</td>
+<td align="LEFT">3.45%</td>
+</tr>
+
+<tr>
+<td align="LEFT">Book</td>
+<td align="LEFT">3.17%</td>
+</tr>
+
+<tr>
+<td align="LEFT">Movie</td>
+<td align="LEFT">3.03%</td>
+</tr>
+
+<tr>
+<td align="LEFT">UnitedStatesState</td>
+<td align="LEFT">2.90%</td>
+</tr>
+
+<tr>
+<td align="LEFT">Actor</td>
+<td align="LEFT">2.07%</td>
+</tr>
+
+<tr>
+<td align="LEFT">OperatingSystem</td>
+<td align="LEFT">1.93%</td>
+</tr>
+
+<tr>
+<td align="LEFT">MusicalInstrumentBrand</td>
+<td align="LEFT">1.66%</td>
+</tr>
+
+<tr>
+<td align="LEFT">ComedyTVShow</td>
+<td align="LEFT">1.38%</td>
+</tr>
+
+<tr>
+<td align="LEFT">Author</td>
+<td align="LEFT">1.38%</td>
+</tr>
+
+<tr>
+<td align="LEFT">ConsumerElectronicsCorporation</td>
+<td align="LEFT">1.10%</td>
+</tr>
+
+<tr>
+<td align="LEFT">Athlete</td>
+<td align="LEFT">1.10%</td>
+</tr>
+
+<tr>
+<td align="LEFT">ComicStrip</td>
+<td align="LEFT">0.97%</td>
+</tr>
+
+<tr>
+<td align="LEFT">HomeAndGardenBrand</td>
+<td align="LEFT">0.83%</td>
+</tr>
+
+<tr>
+<td align="LEFT">SportingGoodsBrand</td>
+<td align="LEFT">0.83%</td>
+</tr>
+</tbody></table>
+</div>
+
+<a id="tab:nspots-table" name="tab:nspots-table"></a></td>
+</tr>
+</tbody></table>
+</div>
+
+<br>
+ 
+
+<p><br>
+</p>
+
+<div align="CENTER"><a id="708" name="708"></a> 
+
+<table summary="Table 3: Nodes">
+<caption><strong>Table 3:</strong> Nodes of TAP with percentage of
+spots occurring in corresponding subtree.</caption>
+
+<tbody><tr>
+<td>
+<div align="CENTER">
+<table border="1" cellpadding="3">
+<tbody><tr>
+<td align="LEFT">Fraction</td>
+<td align="LEFT">Num entries</td>
+<td align="LEFT">IR</td>
+<td align="LEFT">Bayes</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.0001</td>
+<td align="LEFT">15K</td>
+<td align="LEFT">79%</td>
+<td align="LEFT">71%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.0005</td>
+<td align="LEFT">15K</td>
+<td align="LEFT">79%</td>
+<td align="LEFT">71%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.001</td>
+<td align="LEFT">15K</td>
+<td align="LEFT">80%</td>
+<td align="LEFT">73%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.0025</td>
+<td align="LEFT">15K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">76%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.005</td>
+<td align="LEFT">16K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">77%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.01</td>
+<td align="LEFT">18K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">78%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.025</td>
+<td align="LEFT">27K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">80%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.05</td>
+<td align="LEFT">44K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">79%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.075</td>
+<td align="LEFT">62K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">80%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.1</td>
+<td align="LEFT">80K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">80%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.2</td>
+<td align="LEFT">155K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">79%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.3</td>
+<td align="LEFT">230K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">80%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.4</td>
+<td align="LEFT">305K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">80%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.5</td>
+<td align="LEFT">381K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">79%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.6</td>
+<td align="LEFT">456K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">79%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.7</td>
+<td align="LEFT">532K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">79%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.8</td>
+<td align="LEFT">608K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">79%</td>
+</tr>
+
+<tr>
+<td align="LEFT">0.9</td>
+<td align="LEFT">683K</td>
+<td align="LEFT">81%</td>
+<td align="LEFT">78%</td>
+</tr>
+
+<tr>
+<td align="LEFT">1.0</td>
+<td align="LEFT">759K</td>
+<td align="LEFT">82%</td>
+<td align="LEFT">78%</td>
+</tr>
+</tbody></table>
+</div>
+
+<a id="tab:ncov-table" name="tab:ncov-table"></a></td>
+</tr>
+</tbody></table>
+</div>
+
+<br>
+ 
+
+<p></p>
+
+<h3><a id="SECTION00044000000000000000" name="SECTION00044000000000000000"></a> <a id="sec:results-machine-data" name="sec:results-machine-data"></a><br>
+4.4 Sensitivity to availability of machine-generated metadata</h3>
+
+<p>Finally, we consider the sensitivity of the algorithm to the
+amount of automatically-generated metadata maintained at internal
+nodes of the taxonomy. As described above, the representation of
+the similarity function is a vector of 200K dimensions. We now
+consider keeping only the largest few dimensions of that vector for
+each of the internal nodes of the taxonomy. We proceed as follows.
+We fix some fraction <img src="SemTag_files/p831-dill-46.png" alt="$ f$" height="30" align="MIDDLE" border="0" width="14">, and for each internal
+node <img src="SemTag_files/p831-dill-29.png" alt="$ u\in T$" height="30" align="MIDDLE" border="0" width="43"> with vector <img src="SemTag_files/p831-dill-47.png" alt="$ \vec{u}$" height="17" align="BOTTOM" border="0" width="14">, we keep only the largest <!-- MATH
+ $\max\left(100,f\cdot\mid
+\{i | \vec{u}_i \neq 0\}\mid\right)$
+ -->
+<img src="SemTag_files/p831-dill-48.png" alt="$ \max\left(100,f\cdot\mid \{i \vert \vec{u}_i \neq 0\}\mid\right)$" height="31" align="MIDDLE" border="0" width="173">
+ entries of <img src="SemTag_files/p831-dill-47.png" alt="$ \vec{u}$" height="17" align="BOTTOM" border="0" width="14">. Table&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#tab:ncov-table">3</a> shows, for various different
+values of the fraction <img src="SemTag_files/p831-dill-46.png" alt="$ f$" height="30" align="MIDDLE" border="0" width="14">, the total number of
+non-zero entries over all internal nodes (i.e., the total number of
+values that must be maintained in order to execute TBD), and the
+performance of the IR and Bayes algorithms using this smaller set
+of machine-generated metadata. The performance of the IR algorithm
+is extremely stable down to 100 non-zero entries per node, and the
+performance of the Bayes algorithm begins to degrade slightly
+sooner.</p>
+
+<p></p>
+
+<h2><a id="SECTION00050000000000000000" name="SECTION00050000000000000000"></a><a id="sec:requirements" name="sec:requirements"></a><br>
+5 System Requirements</h2>
+
+con-sum-ers The purpose of this paper is to describe an approach to
+large-scale automated centralized semantic tagging delivered to
+consumers through a label bureau. SemTag is an application that
+demonstrates the feasibility of this approach. However, SemTag
+relies upon Seeker, which we have developed as an ongoing platform
+to support increasingly sophisticated text analytics applications,
+particularly including future generations of semantic taggers. The
+goal of Seeker is to provide Scalable, Extensible Extraction of
+Knowledge from Erratic Resources. An <i>erratic resource</i> is one
+that may have limited availability, a rapid rate of change, contain
+conflicting or questionable content, or may be impossible to ingest
+in totality (e.g., the World Wide Web). We have identified the
+following design goals: 
+
+<dl>
+<dt><strong>Composibility</strong></dt>
+
+<dd>There are multiple ways a page might be annotated. These
+annotations should be available to other annotators, to allow for
+more complex observations to be created incrementally. This
+requirement of shared annotation is not unlike the blackboard
+system approach&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#blackboard">27</a>].</dd>
+
+<dt><strong>Modularity</strong></dt>
+
+<dd>Various types of annotations require differing methodologies.
+The architecture needs to support the ``plugging in'' different
+approaches, as well as the switching to newer, better
+implementations of existing approaches as they evolve.</dd>
+
+<dt><strong>Extensibility</strong></dt>
+
+<dd>As we have found with SemTag, approaches to annotation evolve
+rapidly when confronted with real data. It is thus important that
+the Seeker architecture allow essentially arbitrary new approaches
+to annotation to be constructed and deployed.</dd>
+
+<dt><strong>Scalability</strong></dt>
+
+<dd>Scalability is important in two respects; first, the ability to
+develop a particular annotation approach on a representative subset
+of the corpora is an important design tool. Once an approach has
+been proved out on a test sub-corpora, it is desirable that the
+code scaled up to a multi-billion document corpora with minimal
+changes (e.g., none).</dd>
+
+<dt><strong>Robustness</strong></dt>
+
+<dd>On very large, distributed systems, failure of individual
+components is not a possibility, it is a certainty. The system
+needs to deal intelligently with failure of portions of the system,
+so that the faults in one component do not bring the whole system
+down.</dd>
+</dl>
+
+<h2><a id="SECTION00060000000000000000" name="SECTION00060000000000000000"></a> <a id="sec:design" name="sec:design"></a><br>
+6 The Seeker Design</h2>
+
+To meet the design requirements expressed in Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:requirements">5</a>, we adopt the architecture
+shown in Figure&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#fig:seeker-arch">6</a>. 
+
+<div align="CENTER"><a id="fig:seeker-arch" name="fig:seeker-arch"></a><a id="898" name="898"></a> 
+
+<table>
+<caption align="BOTTOM"><strong>Figure 6:</strong> Architecture of
+the Seeker system.</caption>
+
+<tbody><tr>
+<td>
+<div align="CENTER"><!-- MATH
+ $\includegraphics[width=3.0in]{sdiag}$
+ -->
+<img src="SemTag_files/p831-dill-49.png" alt="\includegraphics[width=3.0in]{sdiag}" height="169" align="BOTTOM" border="0" width="345"></div>
+</td>
+</tr>
+</tbody></table>
+</div>
+
+Because the system must be modular and extensible, we adopt a web
+services style architecture in which all agents communicate with
+each other through a set of language-independent network-level APIs
+defined on an XML substrate. To support scalability and robustness,
+we classify a small set of critical services within this web
+services framework as <i>infrastructure components</i>. These are
+large, scalable, well-tested, distributed, high-performance
+components that provide baseline functionality such as crawling,
+indexing, storage of data and annotations, and query processing. A
+larger set of loosely coupled analysis agents communicate through a
+centralized data store (itself an infrastructure service). Such an
+agent may execute at a different time and place, and in a different
+language, than another agent it depends on. The runtime environment
+performs monitoring and control of all services in the system. For
+analysis agents, the runtime monitors them, manages their work
+flow, scheduling, and (where possible) parallelism, and causes them
+to see the set of data and annotations necessary for their success.
+The current Seeker environment consists of 128 dual processor 1GHz
+machines, each attached via switched gigabit network to 1/2
+terabyte of network attached storage. Half of this cluster was used
+for the SemTag tests. Since each of these nodes runs at
+approximately 200 documents per second, the total time taken to
+reprocess the web is 32 hours. IO for this speed completely
+occupies one of the two 1GHz processors, requiring that the
+spotter/classifier run at around 200 docs per second (3MB/sec) on a
+single 1GHz processor. This limits the complexity of the
+spotter/classifier that can run. In Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:services">6.1</a> we describe the XML substrate
+of Figure&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#fig:seeker-arch">6</a>.
+Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:infra">6.2</a> then describes
+the current set of infrastructure components within Seeker.
+Finally, Section&nbsp;<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#sec:annotator">6.3</a>
+describes the analysis agents, which include the various components
+of SemTag. 
+
+<h3><a id="SECTION00061000000000000000" name="SECTION00061000000000000000"></a> <a id="sec:services" name="sec:services"></a><br>
+6.1 The XML substrate</h3>
+
+<p>Functionality in Seeker is delivered through a network services
+model, in which components publish their availability through a
+centralized registry, and export a network-level API. Thus, Seeker
+is a <i>service oriented architecture</i> (SOA): a local-area,
+loosely-coupled, pull-based, distributed computation system. We
+require high speed (<!-- MATH
+ $\approx 10,000$
+ -->
+<img src="SemTag_files/p831-dill-50.png" alt="$ \approx 10,000$" height="29" align="MIDDLE" border="0" width="65"> RPCs per second), high
+availability (automatic fail-over to backup services), and
+efficient multiple programming language support (due to integration
+and performance issues). As a result we choose to base our network
+services on Vinci&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#agr:www10">2</a>] a
+SOAP&nbsp;[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#db:soap">6</a>]-derived package
+designed for higher performance intra-net applications.</p>
+
+<p>Vinci uses a lightly encoded XML (employing the <tt>xtalk</tt>
+protocol) over raw TCP sockets to provide the required RPC rate. It
+includes translation gateways allowing SOAP components to be
+integrated with minimal difficulty.</p>
+
+<p></p>
+
+<p></p>
+
+<h3><a id="SECTION00062000000000000000" name="SECTION00062000000000000000"></a> <a id="sec:infra" name="sec:infra"></a><br>
+6.2 Infrastructure components</h3>
+
+<p>Infrastructure services must address issues of reliability and
+scalability; therefore, the implementation of these core services
+includes a systems engineering problem. The main infrastructure
+components of Seeker include a centralized store, an extensible
+full-text indexer, a scalable web crawler, and a query processing
+component called the joiner. We will cover here only the components
+that are relevant to semantic tagging applications.</p>
+
+<p></p>
+
+<h4><a id="SECTION00062100000000000000" name="SECTION00062100000000000000"></a> <a id="sec:store" name="sec:store"></a><br>
+6.2.1 The Data Store</h4>
+
+The data store is the central repository for all long-term shared
+data storage within Seeker. The store not only serves as a storage
+service for the rest of Seeker, but it also serves as the main
+communication medium between miners. Annotators store their output
+in the data store, and other miners depending on them retrieve that
+information from the store, possibly much later and in a very
+different environment, enabling loose coupling of miners. A Seeker
+store contains <i>entities</i>, each of which is identified by a
+globally unique 128 bit <i>Universal Entity Identifier</i> (or
+UEID). The store provides both fast batched and random access to
+entities. Entities are of a particular <em>entity type</em>. A web
+page would be stored as an entity of type ``Page,'' for instance,
+while the information about a particular person would be stored as
+an entity of type ``Person''. The key/value pairs associated with
+an entity describe all the information that has been extracted
+about that entity. 
+
+<h4><a id="SECTION00062200000000000000" name="SECTION00062200000000000000"></a> <a id="sec:indexer" name="sec:indexer"></a><br>
+6.2.2 The Indexer</h4>
+
+<p>The Seeker system contains a generic large-scale distributed
+indexer capable of indexing sequences of tokens. The index built
+contains not only a positional text index of the web, but also
+additional document annotations generated by miners. The indexer is
+fed documents as a stream of tokens, similar to the MultiText model
+[<a href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#MultiText1">9</a>], which allows us to achieve
+high performance during indexing due to the simple data model. For
+flexibility, each token that is indexed can have arbitrary
+attribute data associated with it. Analysis agents can generate
+additional tokens that overlay text tokens to indicate higher-level
+semantic information. These tokens are indexed along with the text,
+and may be used in queries to mix semantic information with
+full-text queries.</p>
+
+<p></p>
+
+<h4><a id="SECTION00062300000000000000" name="SECTION00062300000000000000">6.2.3 The Joiner</a></h4>
+
+<p>Indexers within the system are generic components. The indexer
+described above builds and serves a positional index that allows
+proximity queries, phrase search, and so forth. However, for some
+applications, an index that supports range queries of numeric
+values might be more appropriate--consider, for example, queries
+for locations within a particular region. Other queries may desire
+information about closure of spans of information, or be geospatial
+in nature or be part of a hand-selected collection or any of a
+number of restrictions.</p>
+
+<p>The joiner is a service that takes a request, for example</p>
+
+<pre> 
+SELECT url FROM web WHERE 
+       SemTag = 'Athlete,Jorden,_Michael' 
+   and PageLocation within 20 miles of SanJose
+</pre>
+
+<p>and returns the set of URLs of pages that meet the restriction
+criteria.</p>
+
+<p>The joiner allows more complicated annotators to examine only
+those documents which meet some basic criteria, allowing them to
+take more time on those pages of interest.</p>
+
+<p></p>
+
+<p></p>
+
+<h3><a id="SECTION00063000000000000000" name="SECTION00063000000000000000"></a><a id="sec:annotator" name="sec:annotator"></a><br>
+6.3 Analysis agents</h3>
+
+An analysis agent is an encapsulated piece of functionality that
+executes in the Seeker environment, roughly equivalent to a
+``module'' in a traditional programming language. As such, it is a
+completely generic object that could perform simple processing of
+individual pages, or could perform complex distributed operations
+with built-in fault tolerance and parallelism. Clearly, it is not
+possible to provide development tools that will make all annotators
+easy to write. Instead, we identified a limited but common class of
+analysis agents called <i>annotators</i> and we have worked to
+provide significant support for these agents, while allowing the
+more sophisticated user full generality to create more complex
+agents. All the initial SemTag components are annotators. We then
+define <i>miners</i> to be agents that do not fall into this
+limited set. 
+
+<p></p>
+
+<h4><a id="SECTION00063100000000000000" name="SECTION00063100000000000000"></a><a id="sec:per-entity" name="sec:per-entity"></a><br>
+6.3.1 Annotators</h4>
+
+<p>An annotator is defined as an analysis agent that can be written
+to process each entity of a certain type independently. We focus
+immediately on the most common category of annotators, in which the
+entity type is the page, and the annotator performs some local
+processing on each web page, and writes back results to the store
+in the form of an annotation. For example, analysis agents that
+scan each web page and recognize geographic locations, or proper
+names, or weights and measures, or indications that the page
+contains pornographic content, are all annotators. Similarly,
+analysis agents that perform complex tokenization, summarization,
+or language identification, or that automatically translate between
+languages, are also annotators.</p>
+
+<p>Annotators manifest strong locality of reference in that they
+can be run independently on each individual web page without
+reference to other pages. Thus, they can be executed by the system
+on a machine with limited resources, and handed one page at a time.
+The system provides special support for annotators, making them
+almost trivial to program. The programmer need write only a simple
+<tt>process_one_page()</tt> function, and the system will make sure
+the function is applied to all pages in the dataset, and the
+results are published in the store for all others annotators to
+use.</p>
+
+<p>In SemTag, the operation of dumping all windows containing
+references to TAP objects is coded as an annotator. Due to the
+simplicity of creating and running annotators, it was possible to
+post-process the TAP RDF file in order to extract the labels for
+each node of the ontology, create an annotator to extract the
+windows around each label, and run the annotator on the full set of
+data, within a 24 hours period.</p>
+
+<p>A similar annotator can be used to write annotations back into
+the store once processing has completed on the large collections of
+windows. However, the intermediate processing, generation of
+automatic metadata, and incorporation of manual metadata from human
+judgments, does not fit the limited definition of an annotator, and
+must therefore be coded a more general miner.</p>
+
+<p></p>
+
+<h4><a id="SECTION00063200000000000000" name="SECTION00063200000000000000"></a><a id="sec:cross-entity" name="sec:cross-entity"></a><br>
+6.3.2 Miners</h4>
+
+<p>Miners are analysis agents that need to look at a number of
+entities (of one or more entity type) together in order to arrive
+at their conclusions. The overall SemTag application (using the TBD
+algorithm) is a good example of such a system, as it looks at the
+results of spots on many pages in order to disambiguate them.</p>
+
+<p>Examples of other cross-entity miners are those that generate
+co-occurrence information, aggregate site information, and hub and
+authority scores.</p>
+
+<p></p>
+
+<h2><a id="SECTION00070000000000000000" name="SECTION00070000000000000000"></a> <a id="sec:conc" name="sec:conc"></a><br>
+7 Conclusions and Future Directions</h2>
+
+We believe that automated tagging is essential to bootstrap the
+Semantic Web. As the results of the experiments with SemTag show,
+it is possible to achieve interestingly high levels of accuracy
+even with relatively simple approaches to disambiguation. In the
+future we expect that there will be many different approaches and
+algorithms to automated tagging. Unfortunately, storing a copy of
+the web and creating the infrastructure for running a tagger on
+billions of pages is beyond the scope of most researchers. It is
+our goal to provide a tagging of the web as a label bureau.
+Further, we would also like to provide Seeker as a public service
+for the research community to try various experimental approaches
+for automated tagging. 
+
+<p></p>
+
+<h2><a id="SECTION00080000000000000000" name="SECTION00080000000000000000"><br>8 Acknowledgments</a>
+
+We would like to thanks our colleagues in the Seeker development,
+business and management teams for their contributions: Rakesh
+Agrawal, Laura Andreson, Srinivasan Balasubramanian, Bruce
+Baumgart, Varun Bhagwan, Michael Boroch, Krishna P. Chitrapura,
+Arthur Ciccolo, Tom Costello, Matthew Denesuk, Rajesh Desai, Ajay
+K. Dhawale, Maritza Dubec, Mike Dybicz, Richard Hirst, Ann Hosein,
+Kobus Jooste, Sachindra Joshi, Vinay Kaku, David Kamalsky, Reiner
+Kraft, Krishna Kummamuru, Bryan Langston, Jimmy Lin, Peter Mandel,
+Rajesh Manjrekar, Kevin Mann, Kiran Mehta, Joerg Meyer, Robert
+Morris, Alison Mortinger, Amit A. Nanavati, Ross Nelson, Tram
+Nguyen, Wayne Niblack, Norm Pass, Pradhan Pattnayak, Jan Pieper,
+Julius Quiaot, Jerell Shelton, Kim Sherman, David Smith, Amit
+Somani, Magnus Stensmo, Thomas Truong, Roger Williams, David
+Williamson, Jeonghee Yi, and Zachary Zhang. 
+
+<p>We would also like to thank the TAP project at Stanford for
+providing the ontology used for the semantic tagging. In
+particular, we would like to thank: Rob McCool, Ed Feigenbaum,
+Richard Fikes, Shiela McIlraith and Deborah McGuiness.</p>
+
+<p>Finally, a special thanks to Bruce Baumgart for hardware
+wizardry that made the experiments described above possible.</p>
+
+<p></p>
+
+<p></p>
+
+</h2><h2><a id="SECTION00090000000000000000" name="SECTION00090000000000000000">Bibliography</a></h2>
+
+<dl compact="compact">
+<dt><a id="AQM97" name="AQM97">1</a></dt>
+
+<dd>S.&nbsp;Abiteboul, D.&nbsp;Quass, J.&nbsp;McHugh,
+J.&nbsp;Widom, and J.&nbsp;Wiener.<br>
+The lorel query language for semistructured data.<br>
+<em>International Journal of Digital Libraries</em>, 1(1):68-88,
+1997.</dd>
+
+<dt><a id="agr:www10" name="agr:www10">2</a></dt>
+
+<dd>R.&nbsp;Agrawal, R.&nbsp;Bayardo, D.&nbsp;Gruhl, and
+S.&nbsp;Papadimitriou.<br>
+Vinci: A service-oriented architecture for rapid development of web
+applications.<br>
+In <em>Proceedings of the Tenth International World Wide Web
+Conference (WWW2001)</em>, pages 355-365, Hong Kong, China,
+2001.</dd>
+
+<dt><a id="AltaVista" name="AltaVista">3</a></dt>
+
+<dd>AltaVista.<br>
+<tt><a id="tex2html11" name="tex2html11" href="http://www.altavista.com/">http://www.altavista.com</a></tt>.</dd>
+
+<dt><a id="AMM97" name="AMM97">4</a></dt>
+
+<dd>G.&nbsp;Arocena, A.&nbsp;Mendelzon, and G.&nbsp;Mihaila.<br>
+Applications of a Web query language.<br>
+In <em>Proceedings of the 6th International World Wide Web
+Conference (WWW1997)</em>, pages 1305-1315, Santa Clara, CA,
+1997.</dd>
+
+<dt><a id="sw" name="sw">5</a></dt>
+
+<dd>T.&nbsp;Berners-Lee, J.&nbsp;Hendler, and
+O.&nbsp;Lassila.<br>
+Semantic web.<br>
+<em>Scientific American</em>, 1(1):68-88, 2000.</dd>
+
+<dt><a id="db:soap" name="db:soap">6</a></dt>
+
+<dd>D.&nbsp;Box, D.&nbsp;Ehnebuske, G.&nbsp;Kakivaya,
+A.&nbsp;Layman, N.&nbsp;Mendelsohn, H.&nbsp;F. Nielsen,
+S.&nbsp;Thatte, and D.&nbsp;Winder.<br>
+Simple Object Access Protocol.<br>
+<tt><a id="tex2html12" name="tex2html12" href="http://www.w3.org/TR/SOAP/">http://www.w3.org/TR/SOAP/</a></tt>,
+May 2000.</dd>
+
+<dt><a id="RDFS" name="RDFS">7</a></dt>
+
+<dd>D.&nbsp;Brickley and R.V.Guha.<br>
+Rdf schema.<br>
+<tt><a id="tex2html13" name="tex2html13" href="http://www.w3.org/TR/rdf-schema/">http://www.w3.org/TR/rdf-schema/</a></tt>.</dd>
+
+<dt><a id="monikasurvey" name="monikasurvey">8</a></dt>
+
+<dd>A.&nbsp;Broder and M.&nbsp;R. Henzinger.<br>
+Algorithmic aspects of information retrieval on the web.<br>
+In M.&nbsp;G. C.&nbsp;R. J.&nbsp;Abello, P. M.&nbsp;Pardalos,
+editor, <em>Handbook of Massive Data Sets</em>. Kluwer Academic
+Publishers, Boston, to appear.</dd>
+
+<dt><a id="MultiText1" name="MultiText1">9</a></dt>
+
+<dd>C.&nbsp;Clarke, G.&nbsp;Cormack, and F.&nbsp;Burkowski.<br>
+Shortest substring ranking.<br>
+In <em>Proceedings of the Fourth Text Retrieval Conference</em>,
+pages 295-304, Gaithersburg, MD, November 1995.</dd>
+
+<dt><a id="cohen-structured" name="cohen-structured">10</a></dt>
+
+<dd>W.&nbsp;Cohen and L.&nbsp;Jensen.<br>
+A structured wrapper induction system for extracting information
+from semi-structured documents.<br>
+In <em>Proceedings of the Workshop on Adaptive Text Extraction and
+Mining (IJCAI'01)</em>, 2001.</dd>
+
+<dt><a id="erdmann00from" name="erdmann00from">11</a></dt>
+
+<dd>M.&nbsp;Erdmann, A.&nbsp;Maedche, H.&nbsp;Schnurr, and
+S.&nbsp;Staab.<br>
+From manual to semi-automatic semantic annotation: About
+ontology-based text annotation tools.<br>
+In P.&nbsp;Buitelaar and K.&nbsp;Hasida, editors, <em>Proceedings
+of the COLING 2000 Workshop on Semantic Annotation and Intelligent
+Content</em>, August 2000.</dd>
+
+<dt><a id="Google" name="Google">12</a></dt>
+
+<dd>Google.<br>
+<tt><a id="tex2html14" name="tex2html14" href="http://www.google.com/">http://www.google.com</a></tt>.</dd>
+
+<dt><a id="KA" name="KA">13</a></dt>
+
+<dd>T.&nbsp;R. Gruber.<br>
+Towards Principles for the Design of Ontologies Used for Knowledge
+Sharing.<br>
+In N.&nbsp;Guarino and R.&nbsp;Poli, editors, <em>Formal Ontology
+in Conceptual Analysis and Knowledge Representation</em>, Deventer,
+The Netherlands, 1993. Kluwer Academic Publishers.</dd>
+
+<dt><a id="SHOE" name="SHOE">14</a></dt>
+
+<dd>J.&nbsp;Heflin and J.&nbsp;Hendler.<br>
+Searching the web with shoe.<br>
+In <em>AAAI-2000 Workshop on AI for Web Search</em>, 2000.</dd>
+
+<dt><a id="Telegraph" name="Telegraph">15</a></dt>
+
+<dd>J.&nbsp;M. Hellerstein, M.&nbsp;J. Franklin,
+S.&nbsp;Chandrasekaran, A.&nbsp;Deshpande, K.&nbsp;Hilldrum,
+D.&nbsp;Maden, V.&nbsp;Raman, and M.&nbsp;A. Shah.<br>
+Adaptive query processing: Technology in evolution.<br>
+<em>IEEE Data Engineering Bulletin</em>, 23(2):7-18, 2000.</dd>
+
+<dt><a id="WebBase" name="WebBase">16</a></dt>
+
+<dd>J.&nbsp;Hirai, S.&nbsp;Raghavan, A.&nbsp;Paepcke, and
+H.&nbsp;Garcia-Molina.<br>
+WebBase: A repository of Web pages.<br>
+In <em>Proceedings of the 9th International World Wide Web
+Conference (WWW2000)</em>, pages 277-293, Amsterdam, The
+Netherlands, 2000.</dd>
+
+<dt><a id="kahan01annotea" name="kahan01annotea">17</a></dt>
+
+<dd>J.&nbsp;Kahan and M.-R. Koivunen.<br>
+Annotea: an open RDF infrastructure for shared web
+annotations.<br>
+In <em>World Wide Web</em>, pages 623-632, 2001.</dd>
+
+<dt><a id="kushmerick97wrapper" name="kushmerick97wrapper">18</a></dt>
+
+<dd>N.&nbsp;Kushmerick, D.&nbsp;S. Weld, and R.&nbsp;B.
+Doorenbos.<br>
+Wrapper induction for information extraction.<br>
+In <em>Intl. Joint Conference on Artificial Intelligence
+(IJCAI)</em>, pages 729-737, 1997.</dd>
+
+<dt><a id="leonard-large" name="leonard-large">19</a></dt>
+
+<dd>T.&nbsp;Leonard and H.&nbsp;Glaser.<br>
+Large scale acquisition and maintenance from the web without source
+access.<br>
+http://semannot2001.aifb.uni-karlsruhe.de/positionpapers/Leonard.pdf,
+2001.</dd>
+
+<dt><a id="lerman-automatic" name="lerman-automatic">20</a></dt>
+
+<dd>K.&nbsp;Lerman, C.&nbsp;Knoblock, and S.&nbsp;Minton.<br>
+Automatic data extraction from lists and tables in web
+sources.<br>
+In <em>IJCAI-2001 Workshop on Adaptive Text Extraction and
+Mining</em>, August 2001.</dd>
+
+<dt><a id="levow97corpusbased" name="levow97corpusbased">21</a></dt>
+
+<dd>G.-A. Levow.<br>
+Corpus-based techniques for word sense disambiguation.<br>
+Technical Report AIM-1637, MIT AI Lab, 1, 1997.</dd>
+
+<dt><a id="SAD" name="SAD">22</a></dt>
+
+<dd>J.&nbsp;Li, L.&nbsp;Zhang, and Y.&nbsp;Yu.<br>
+Learning to generate semantic annotation for domain specific
+sentences.<br>
+ <tt><a id="tex2html15" name="tex2html15" href="http://semannot2001.aifb.uni-karlsruhe.de/positionpapers/GenerateSemAnnot.pdf">
+http://semannot2001.aifb.uni-karlsruhe.de/positionpapers/GenerateSemAnnot.pdf</a></tt>.</dd>
+
+<dt><a id="lockheed-aerodaml" name="lockheed-aerodaml">23</a></dt>
+
+<dd>P.&nbsp;K. Lockheed.<br>
+AeroDAML: Applying information extraction to generate DAML
+annotations from web pages.</dd>
+
+<dt><a id="mcguinness01description" name="mcguinness01description">24</a></dt>
+
+<dd>D.&nbsp;L. McGuinness.<br>
+Description logics emerge from ivory towers.<br>
+In <em>Description Logics</em>, 2001.</dd>
+
+<dt><a id="MMM98" name="MMM98">25</a></dt>
+
+<dd>G.&nbsp;Mecca, A.&nbsp;Mendelzon, and P.&nbsp;Merialdo.<br>
+Efficient queries over web views.<br>
+In <em>Proceedings of the 6th International Conference on Extending
+Database Technology (EDBT'98)</em>, volume LNCS 1377, pages 72-86,
+Valencia, Spain, 1998. Springer-Verlag.</dd>
+
+<dt><a id="mihalcea99word" name="mihalcea99word">26</a></dt>
+
+<dd>R.&nbsp;Mihalcea.<br>
+Word sense disambiguation and its application to the internet
+search.<br>
+Master's thesis, Southern Methodist University, 1999.</dd>
+
+<dt><a id="blackboard" name="blackboard">27</a></dt>
+
+<dd>A.&nbsp;Newell.<br>
+Some problems of the basic organization in problem-solving
+programs.<br>
+In <em>Proceedings of the Second Conference on Self-Organizing
+Systems</em>, pages 393-423, Washington, DC, 1962.</dd>
+
+<dt><a id="noy-creating" name="noy-creating">28</a></dt>
+
+<dd>N.&nbsp;F. Noy, M.&nbsp;Sintek, S.&nbsp;Decker,
+M.&nbsp;Crubezy, R.&nbsp;W. Fergerson, and M.&nbsp;A. Musen.<br>
+Creating semantic web contents with protege-2000.<br>
+<em>IEEE Intelligent Systems</em>, 2(16):60-71, 2001.</dd>
+
+<dt><a id="pustejovsky97semantic" name="pustejovsky97semantic">29</a></dt>
+
+<dd>J.&nbsp;Pustejovsky, B.&nbsp;Boguraev, M.&nbsp;Verhagen,
+P.&nbsp;Buitelaar, and M.&nbsp;Johnston.<br>
+Semantic indexing and typed hyperlinking.<br>
+In <em>Proceedings of the American Association for Artificial
+Intelligence Conference, Spring Symposium, NLP for WWW</em>, pages
+120-128, 1997.</dd>
+
+<dt><a id="TAP" name="TAP">30</a></dt>
+
+<dd>R.Guha and R.&nbsp;McCool.<br>
+Tap: Towards a web of data.<br>
+<tt><a id="tex2html16" name="tex2html16" href="http://tap.stanford.edu/">http://tap.stanford.edu/</a></tt>.</dd>
+
+<dt><a id="riloff96empirical" name="riloff96empirical">31</a></dt>
+
+<dd>E.&nbsp;Riloff and J.&nbsp;Shepherd.<br>
+A corpus-based approach for building semantic lexicons.<br>
+In <em>Proceedings of the Second Conference on Empirical Methods in
+Natural Language Processing (EMNLP-97)</em>, pages 117-124,
+Providence, RI, 1997.</dd>
+
+<dt><a id="schuetze98automatic" name="schuetze98automatic">32</a></dt>
+
+<dd>H.&nbsp;Schütze.<br>
+Automatic word sense discrimination.<br>
+<em>Computational Linguistics</em>, 24(1):97-124, 1998.</dd>
+
+<dt><a id="SS00" name="SS00">33</a></dt>
+
+<dd>E.&nbsp;Spertus and L.&nbsp;A. Stein.<br>
+Squeal: A structured query language for the web.<br>
+In <em>Proceedings of the 9th International World Wide Web
+Conference (WWW2000)</em>, pages 95-103, Amsterdam, The
+Netherlands, 2000.</dd>
+
+<dt><a id="staab01annotation" name="staab01annotation">34</a></dt>
+
+<dd>S.&nbsp;Staab, A.&nbsp;Maedche, and S.&nbsp;Handschuh.<br>
+An annotation framework for the semantic web.<br>
+In S.&nbsp;Isjizaki, editor, <em>Proceedings of the First Workshop
+on Multimedia Annotation</em>, Tokyo, Japan, January 2001.</dd>
+
+<dt><a id="internetarchive" name="internetarchive">35</a></dt>
+
+<dd>The Internet Archive.<br>
+<tt><a id="tex2html17" name="tex2html17" href="http://www.archive.org/">http://www.archive.org</a></tt>.</dd>
+
+<dt><a id="and-mnm" name="and-mnm">36</a></dt>
+
+<dd>M.&nbsp;Vargas-Vera, E.&nbsp;Motta, J.&nbsp;Domingue,
+M.&nbsp;Lanzoni, A.&nbsp;Stutt, and F.&nbsp;Ciravegna.<br>
+MnM: Ontology driven semi-automatic and automatic support for
+semantic markup.<br>
+In <em>The 13th International Conference on Knowledge Engineering
+and Management (EKAW 2002)</em>, 2002.</dd>
+
+<dt><a id="PICS" name="PICS">37</a></dt>
+
+<dd>W3C.<br>
+Platform for internet content selection.<br>
+<tt><a id="tex2html18" name="tex2html18" href="http://www.w3.org/PICS/">http://www.w3.org/PICS/</a></tt>.</dd>
+
+<dt><a id="OWL" name="OWL">38</a></dt>
+
+<dd>W3C.<br>
+Web ontology language.<br>
+<tt><a id="tex2html19" name="tex2html19" href="http://www.w3.org/2001/sw/WebOnt/">http://www.w3.org/2001/sw/WebOnt/</a></tt>.</dd>
+
+<dt><a id="webbox" name="webbox">39</a></dt>
+
+<dd>Web-in-a-Box.<br>
+<tt><a id="tex2html20" name="tex2html20" href="http://research.compaq.%20com/SRC/WebArcheology/wib.html">http://research.compaq.
+com/SRC/WebArcheology/wib.html</a></tt>.</dd>
+
+<dt><a id="wilks97sense" name="wilks97sense">40</a></dt>
+
+<dd>Y.&nbsp;Wilks and M.&nbsp;Stevenson.<br>
+Sense tagging: Semantic tagging with a lexicon.<br>
+In <em>Proceedings of the SIGLEX Workshop Tagging Text with Lexical
+Semantics: What, why and how?</em>, pages 47-51, 1997.</dd>
+</dl>
+
+<br>
+<hr>
+<h4>Footnotes</h4>
+
+<dl>
+<dt><a id="foot187" name="foot187">... data.</a><a id="foot187" name="foot187" href="http://www2003.org/cdrom/papers/refereed/p831/main.htm#tex2html1"><sup>1</sup></a></dt>
+
+<dd>Today, machines can understand very little of the content on
+the web - almost all the markup contained in web pages pertains to
+formatting.</dd>
+</dl>
+
+<br>
+<hr>
+</div>
+
+
+</body></html>
